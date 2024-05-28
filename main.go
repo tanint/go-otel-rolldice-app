@@ -1,23 +1,24 @@
 package main
 
 import (
-	"math/rand"
-	"net/http"
-	"time"
-
+	"github.com/demo/rolldice/internal/rolldice/api"
+	"github.com/demo/rolldice/internal/rolldice/services"
+	"github.com/demo/rolldice/pkg/observability"
 	"github.com/labstack/echo/v4"
+	"go.opentelemetry.io/otel"
 )
-
-func rollDiceHandler(c echo.Context) error {
-	randSrc := rand.NewSource(time.Now().UnixNano())
-	rnd := rand.New(randSrc)
-	diceRoll := rnd.Intn(6) + 1
-
-	return c.JSON(http.StatusOK, map[string]int{"result": diceRoll})
-}
 
 func main() {
 	e := echo.New()
-	e.GET("/roll", rollDiceHandler)
+
+	shutdown := observability.InitialiseOpentelemetry("http://localhost:4138", "rolldice-app")
+	defer shutdown()
+
+	tracer := otel.Tracer("main")
+
+	rolldiceService := services.NewRollDiceService(tracer)
+
+	api.InitRolldiceHandler(e, rolldiceService)
+
 	e.Logger.Fatal(e.Start(":8083"))
 }
