@@ -11,7 +11,7 @@ import (
 func main() {
 	e := echo.New()
 
-	shutdown := observability.InitialiseOpentelemetry("http://localhost:4138", "rolldice-app")
+	shutdown := observability.InitialiseOpentelemetry("localhost:65479", "rolldice-app")
 	defer shutdown()
 
 	tracer := otel.Tracer("main")
