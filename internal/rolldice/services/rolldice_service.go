@@ -5,6 +5,7 @@ import (
 	"math/rand"
 	"time"
 
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 )
 
@@ -20,12 +21,17 @@ func NewRollDiceService(tracer trace.Tracer) *RollDiceService {
 
 func (s *RollDiceService) Dice(ctx context.Context) int {
 	_, span := s.tracer.Start(ctx, "Rolling")
+
 	defer span.End()
 
 	randSrc := rand.NewSource(time.Now().UnixNano())
 	rnd := rand.New(randSrc)
 
 	diceRoll := rnd.Intn(6) + 1
+
+	span.SetAttributes(
+		attribute.Int("app.roll.result", diceRoll),
+	)
 
 	return diceRoll
 }
