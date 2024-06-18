@@ -6,6 +6,7 @@ import (
 	"github.com/demo/rolldice/config"
 	"github.com/demo/rolldice/internal/rolldice/api"
 	"github.com/demo/rolldice/internal/rolldice/services"
+	"github.com/demo/rolldice/pkg/logger"
 	"github.com/demo/rolldice/pkg/middlewares"
 	"github.com/demo/rolldice/pkg/o11y"
 	"github.com/labstack/echo/v4"
@@ -21,15 +22,17 @@ func main() {
 		log.Fatalf(err.Error())
 	}
 
-	shutdown := o11y.InitOTel(otelConfig)
+	otelservice := o11y.InitOTel(otelConfig)
 
-	defer shutdown()
+	logger := logger.NewLogger(otelservice.LoggerProvider)
+
+	defer otelservice.Shutdown()
 
 	tracer := otel.Tracer("main")
 
 	e.Use(middlewares.OtelMiddleware(otelConfig.AppName))
 
-	rolldiceService := services.NewRollDiceService(tracer)
+	rolldiceService := services.NewRollDiceService(tracer, logger)
 
 	api.InitRolldiceHandler(e, rolldiceService)
 

@@ -108,7 +108,12 @@ func newLoggerProvider(res *sdkresource.Resource, exporter *otlploghttp.Exporter
 	return provider
 }
 
-func InitOTel(config *config.InitOTelConfig) func() {
+type InitResult struct {
+	Shutdown       func()
+	LoggerProvider *sdklog.LoggerProvider
+}
+
+func InitOTel(config *config.InitOTelConfig) InitResult {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 
 	resource, err := newResource(ctx, config.AppName)
@@ -130,11 +135,14 @@ func InitOTel(config *config.InitOTelConfig) func() {
 	exceptions.Print(err, "Error creating Log HTTP exporter")
 	lp := newLoggerProvider(resource, logHttpExporter)
 
-	return func() {
-		exceptions.Print(tp.Shutdown(ctx), "Error shutting down Trace provider")
-		exceptions.Print(mp.Shutdown(ctx), "Error shutting down Metric provider")
-		exceptions.Print(lp.Shutdown(ctx), "Error shutting down Log provider")
+	return InitResult{
+		Shutdown: func() {
+			exceptions.Print(tp.Shutdown(ctx), "Error shutting down Trace provider")
+			exceptions.Print(mp.Shutdown(ctx), "Error shutting down Metric provider")
+			exceptions.Print(lp.Shutdown(ctx), "Error shutting down Log provider")
 
-		cancel()
+			cancel()
+		},
+		LoggerProvider: lp,
 	}
 }
