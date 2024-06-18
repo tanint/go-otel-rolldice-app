@@ -9,15 +9,17 @@ import (
 	exceptions "github.com/demo/rolldice/pkg/exceptions"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
 	"go.opentelemetry.io/otel/propagation"
+	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.24.0"
 )
 
-func newHttpExporter(otlpEndpoint string, authToken string) (*otlptrace.Exporter, error) {
+func newHttpTraceExporter(otlpEndpoint string, authToken string) (*otlptrace.Exporter, error) {
 	client := otlptracehttp.NewClient(
 		otlptracehttp.WithEndpoint(otlpEndpoint),
 		otlptracehttp.WithInsecure(),
@@ -40,7 +42,6 @@ func newResource(ctx context.Context, appName string) (*resource.Resource, error
 }
 
 func newTraceProvider(resource *resource.Resource, spanProcessor sdktrace.SpanProcessor) *sdktrace.TracerProvider {
-
 	tracerProvider := sdktrace.NewTracerProvider(
 		sdktrace.WithSampler(sdktrace.AlwaysSample()),
 		sdktrace.WithResource(resource),
@@ -50,23 +51,41 @@ func newTraceProvider(resource *resource.Resource, spanProcessor sdktrace.SpanPr
 	return tracerProvider
 }
 
+func newMeterProvider(resource *resource.Resource, metricExporter *otlpmetrichttp.Exporter) (*sdkmetric.MeterProvider, error) {
+	mp := sdkmetric.NewMeterProvider(
+		sdkmetric.WithResource(resource),
+		sdkmetric.WithReader(sdkmetric.NewPeriodicReader(
+			metricExporter,
+		)),
+	)
+
+	return mp, nil
+}
+
 func InitOTel(c *config.InitOTelConfig) func() {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 
-	resource, err := newResource(ctx, c.AppName)
-	exceptions.Print(err, "failed to create the OTLP resource")
+	metricExporter, err := otlpmetrichttp.New(ctx)
+	exceptions.Print(err, "Error creating Metric exporter")
 
-	exporter, err := newHttpExporter(c.OtlpEndpoint, c.HttpExporterAuthToken)
-	exceptions.Print(err, "failed to created the OTLP exporter")
+	resource, err := newResource(ctx, c.AppName)
+	exceptions.Print(err, "Error creating OTLP resource")
+
+	exporter, err := newHttpTraceExporter(c.OtlpEndpoint, c.HttpExporterAuthToken)
+	exceptions.Print(err, "Error creating Trace provider")
 
 	batchSpanProcessor := sdktrace.NewBatchSpanProcessor(exporter)
-	tracerProvider := newTraceProvider(resource, batchSpanProcessor)
+	tp := newTraceProvider(resource, batchSpanProcessor)
 
-	otel.SetTracerProvider(tracerProvider)
+	mp, err := newMeterProvider(resource, metricExporter)
+	exceptions.Print(err, "Error creating Metric provider")
+
+	otel.SetTracerProvider(tp)
 	otel.SetTextMapPropagator(propagation.TraceContext{})
 
 	return func() {
-		exceptions.Print(tracerProvider.Shutdown(ctx), "failed to gracefully shutdown the tracer provider")
+		exceptions.Print(tp.Shutdown(ctx), "Error shutting down trace provider")
+		exceptions.Print(mp.Shutdown(ctx), "Error shutting down meter provider")
 
 		cancel()
 	}
