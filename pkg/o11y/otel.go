@@ -65,7 +65,7 @@ func newMeterProvider(resource *sdkresource.Resource, metricExporter *otlpmetric
 }
 
 func newMetricHttpExporter(ctx context.Context, otlpEndpoint string, authToken string) (*otlpmetrichttp.Exporter, error) {
-	metricExporter, err := otlpmetrichttp.New(
+	metricHttpExporter, err := otlpmetrichttp.New(
 		ctx,
 		otlpmetrichttp.WithInsecure(),
 		otlpmetrichttp.WithEndpoint(otlpEndpoint),
@@ -78,7 +78,7 @@ func newMetricHttpExporter(ctx context.Context, otlpEndpoint string, authToken s
 		return nil, err
 	}
 
-	return metricExporter, nil
+	return metricHttpExporter, nil
 }
 
 func newLogHttpExporter(ctx context.Context, otlpEndpoint string, authToken string) (*otlploghttp.Exporter, error) {

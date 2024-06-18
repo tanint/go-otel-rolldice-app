@@ -12,7 +12,7 @@ type Formatter struct {
 }
 
 func NewLogger(provider *sdklog.LoggerProvider) *logrus.Logger {
-	hook := otellogrus.NewHook("rolldice-service", otellogrus.WithLoggerProvider(provider))
+	hook := otellogrus.NewHook("github.com/demo/rolldice/pkg/logger", otellogrus.WithLoggerProvider(provider))
 
 	logger := logrus.New()
 	logger.SetFormatter(&Formatter{
