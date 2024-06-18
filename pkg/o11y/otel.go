@@ -65,7 +65,14 @@ func newMeterProvider(resource *resource.Resource, metricExporter *otlpmetrichtt
 func InitOTel(c *config.InitOTelConfig) func() {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 
-	metricExporter, err := otlpmetrichttp.New(ctx)
+	metricExporter, err := otlpmetrichttp.New(
+		ctx,
+		otlpmetrichttp.WithInsecure(),
+		otlpmetrichttp.WithEndpoint(c.OtlpEndpoint),
+		otlpmetrichttp.WithHeaders(map[string]string{
+			"Authorization": "Basic " + c.HttpExporterAuthToken,
+		}),
+	)
 	exceptions.Print(err, "Error creating Metric exporter")
 
 	resource, err := newResource(ctx, c.AppName)
@@ -84,8 +91,8 @@ func InitOTel(c *config.InitOTelConfig) func() {
 	otel.SetTextMapPropagator(propagation.TraceContext{})
 
 	return func() {
-		exceptions.Print(tp.Shutdown(ctx), "Error shutting down trace provider")
-		exceptions.Print(mp.Shutdown(ctx), "Error shutting down meter provider")
+		exceptions.Print(tp.Shutdown(ctx), "Error shutting down Trace provider")
+		exceptions.Print(mp.Shutdown(ctx), "Error shutting down Metric provider")
 
 		cancel()
 	}
