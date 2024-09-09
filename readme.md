@@ -7,6 +7,10 @@ This project demonstrates how to set up OpenTelemetry instrumentation in a Go ap
 ### Tracing
 ![image](https://github.com/user-attachments/assets/d18dd942-6de0-4f6d-bd03-cb704dfb668f)
 
+#### Span detail example
+![image](https://github.com/user-attachments/assets/466f4170-a24e-4c3d-bb82-98d29be07c98)
+
+
 ### Logging
 ![image](https://github.com/user-attachments/assets/2e954946-cf6b-4d0d-8776-9af3822b7e85)
 
