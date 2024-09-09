@@ -21,7 +21,11 @@ func InitRolldiceHandler(e *echo.Echo, rolldiceService *services.RollDiceService
 }
 
 func (h *RolldiceHandler) Roll(c echo.Context) error {
-	result := h.rolldiceService.Dice(c.Request().Context())
+	result, err := h.rolldiceService.Dice(c.Request().Context())
+
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{"message": err.Error()})
+	}
 
 	return c.JSON(http.StatusOK, map[string]int{"result": result})
 }
