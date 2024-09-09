@@ -36,7 +36,7 @@ func main() {
 
 	kafkaUsername := os.Getenv("KAFKA_USERNAME")
 	kafkaPassword := os.Getenv("KAFKA_PASSWORD")
-	kafkaBroker := os.Getenv("ENV_KAFKA_BROKERS")
+	kafkaBroker := os.Getenv("KAFKA_BROKERS")
 
 	brokers := []string{kafkaBroker}
 

@@ -35,7 +35,7 @@ func main() {
 	tracer := otel.Tracer("main")
 	logger := logger.NewLogger(otelservice.LoggerProvider)
 
-	kafkaBroker := os.Getenv("ENV_KAFKA_BROKERS")
+	kafkaBroker := os.Getenv("KAFKA_BROKERS")
 	kafkaUsername := os.Getenv("KAFKA_USERNAME")
 	kafkaPassword := os.Getenv("KAFKA_PASSWORD")
 	lineBotApiAuthToken := os.Getenv("LINE_BOT_API_AUTH_TOKEN")
