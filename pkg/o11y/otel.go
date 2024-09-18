@@ -47,9 +47,9 @@ func createTraceExporter(otlpEndpoint string, authToken string) (*otlptrace.Expo
 	return otlptrace.New(context.Background(), client)
 }
 
-func createTraceProvider(resource *sdkresource.Resource, spanProcessor sdktrace.SpanProcessor) *sdktrace.TracerProvider {
+func createTraceProvider(resource *sdkresource.Resource, spanProcessor sdktrace.SpanProcessor, tracingSampler sdktrace.Sampler) *sdktrace.TracerProvider {
 	return sdktrace.NewTracerProvider(
-		sdktrace.WithSampler(sdktrace.AlwaysSample()),
+		sdktrace.WithSampler(tracingSampler),
 		sdktrace.WithResource(resource),
 		sdktrace.WithSpanProcessor(spanProcessor),
 	)
@@ -103,7 +103,7 @@ func InitOTel(config *config.InitOTelConfig) InitResult {
 	traceExporter, err := createTraceExporter(config.OtlpEndpoint, config.HttpExporterAuthToken)
 	exceptions.Print(err, "Error creating Trace exporter")
 	traceProcessor := sdktrace.NewBatchSpanProcessor(traceExporter)
-	traceProvider := createTraceProvider(resource, traceProcessor)
+	traceProvider := createTraceProvider(resource, traceProcessor, config.TracingSampler)
 	otel.SetTracerProvider(traceProvider)
 	otel.SetTextMapPropagator(propagation.TraceContext{})
 
